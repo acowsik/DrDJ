@@ -1,0 +1,221 @@
+from bottle import route, run, debug, request, static_file, post, response, app, ServerAdapter, redirect, abort
+import threading
+from gevent import monkey
+import os
+import random
+import time
+import subprocess
+import eyed3
+import pickle
+from improvednodes import Directory, File
+from multiprocessing import Lock
+import hashlib
+
+
+monkey.patch_all()
+
+import sys
+#sys.stderr = open('stderr','w')
+
+random_source = open(u'/dev/urandom', 'rb')
+
+#session_id = random_source.read(128)
+session_id = {}
+
+SECRET_COOKIE_KEY = "THISISDUMB"
+USER = os.path.expanduser(u"~")
+WEBSITE_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'site')
+print(WEBSITE_ROOT)
+MUSIC_ROOT = os.path.join(USER, u"Desktop/Music")
+PASSWORD_FILE = u"./passwords.dat"
+PREFERENCES_FILE = u"./preferences.dat"
+LOGIN_ROOT = os.path.join(WEBSITE_ROOT, u'login')
+PREFERENCES_LOCK = Lock()
+
+
+
+try:
+    musicFiles = pickle.load(open(PREFERENCES_FILE, 'rb'))
+    newfiles = musicFiles.updateChanges()
+    print("%d new files added" % newfiles)
+    if newfiles > 0:
+        pickle.dump(musicFiles, open(PREFERENCES_FILE, 'wb'))
+except IOError:
+    musicFiles = Directory(MUSIC_ROOT)
+    pickle.dump(musicFiles, open(PREFERENCES_FILE, 'wb'))
+
+try:
+    userpass = pickle.load(open(PASSWORD_FILE, 'rb'))
+except IOError:
+    #userpass = {'a', hashlib.sha512('a').hexdigest()}
+    sys.stderr.write("Cannot find passwords\n")
+    sys.stderr.flush()
+    sys.exit(0xbadbeef)
+
+def loggedIn(r):
+    return r.get_cookie('session_id', secret=SECRET_COOKIE_KEY) and session_id.get(r.get_cookie('session_id', secret=SECRET_COOKIE_KEY)) \
+     and session_id.get(r.get_cookie('session_id', secret=SECRET_COOKIE_KEY)) > time.time()
+
+
+@route('/<filename>')
+def serveNormal(filename):
+    if not os.path.samefile(WEBSITE_ROOT, 
+        os.path.commonprefix([WEBSITE_ROOT, 
+            os.path.normpath(os.path.join(WEBSITE_ROOT, filename))])):
+        abort(404)
+
+    if loggedIn(request):
+        if filename.endswith('.py') or filename.endswith('.dat'):
+            redirect('/index.html')
+        else:
+            return static_file(filename, root=WEBSITE_ROOT)
+    else:
+        redirect('/login/index.html', 307)
+
+@route('/login/<filename:path>')
+def serveLogin(filename):
+    if not os.path.samefile(LOGIN_ROOT, 
+        os.path.commonprefix([LOGIN_ROOT, 
+            os.path.normpath(os.path.join(LOGIN_ROOT, filename))])):
+        abort(404)
+    if loggedIn(request):
+        redirect('/index.html', 307)
+    resp = static_file(filename, root=LOGIN_ROOT)
+    return resp
+
+@route('/')
+def serveBase():
+    redirect('/login/index.html', 308)
+
+@post('/login/login')
+def login():
+    global session_id
+    username = request.forms.get('username').encode('utf-8')
+    password = request.forms.get('password').encode('utf-8')
+    
+    if username and password and userpass.get(username, None) == hashlib.sha512(password).hexdigest():
+        secret_string = random_source.read(128)
+        session_id[secret_string] = time.time() + 1000.0
+        response.set_cookie("session_id", secret_string, path='/', secret=SECRET_COOKIE_KEY)
+        return "Good Response"
+    else:
+        return "Bad Response"
+
+@post('/renewcookie')
+def renewCookie():
+    if loggedIn(request):
+        session_id[request.get_cookie('session_id', secret=SECRET_COOKIE_KEY)] = time.time() + 1000.0
+        #print('renewed cookie')
+
+@route('/audio/<filename:path>')
+def serve_audio(filename):
+    #print(filename)
+    if not os.path.samefile(MUSIC_ROOT, os.path.commonprefix([MUSIC_ROOT, os.path.normpath(os.path.join(MUSIC_ROOT, filename))])):
+        abort(401, "Sorry, access denied")
+
+    if not os.path.exists(os.path.join(MUSIC_ROOT, filename)):
+        print(filename + "Does not exist")
+        exit(1)
+
+    if loggedIn(request):
+        return static_file(filename, root=MUSIC_ROOT)
+    else:
+        abort(401, "Sorry, access denied")
+    
+    
+@post('/title/<title>')
+def getTitle(title):
+    if not loggedIn(request):
+        abort(401, "Sorry, access denied")
+
+    with PREFERENCES_LOCK:
+        path = musicFiles.getRandomFile().path
+        pickle.dump(musicFiles, open(PREFERENCES_FILE, 'wb'))
+    
+    args=("ffprobe","-show_entries", "format=duration","-i",os.path.join(MUSIC_ROOT, path))
+    #print(args.__repr__())
+    popen = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=open(os.devnull, 'w'))
+    popen.wait()
+    output = popen.stdout.read()
+
+    path = os.path.relpath(path, MUSIC_ROOT)
+
+    return {'song_url': '/audio/' + path, 'song_title': getTitle(os.path.join(MUSIC_ROOT, path)), 
+            'duration': float(output.split(b'\n')[1].split(b'=')[1])}
+
+
+@post('/song/vote')
+def upvote():
+    if loggedIn(request):
+        song = request.json['song']
+        vote = request.json['vote']
+
+        with PREFERENCES_LOCK:
+            song = os.path.join(MUSIC_ROOT, os.path.relpath(song, "/audio"))
+            song = musicFiles.findFile(song)
+
+            if song is None:
+                return
+
+            if vote == "upvote":
+                song.modifyProbability(song.like_increase)
+            elif vote == "downvote":
+                song.modifyProbability(song.like_decrease)
+
+            pickle.dump(musicFiles, open(PREFERENCES_FILE, 'wb'))
+
+
+
+        return "Your preferences have been noted"        
+    else:
+        abort(401, "Sorry, access denied")
+
+
+def getTitle(filepath):
+    if loggedIn(request):
+        audiofile = eyed3.load(filepath)
+        title = None
+
+        if audiofile is not None and audiofile.tag is not None:
+            title = audiofile.tag.title
+        else:
+            title = ''
+
+        if title == "" or title == None:
+            title = ''.join(os.path.basename(filepath).split('.')[:-1])
+
+        return title
+    else:
+        return ''
+
+
+class GeventSSLServer(ServerAdapter):
+    """ Untested. Options:
+
+        * See gevent.wsgi.WSGIServer() documentation for more options.
+    """
+
+    def run(self, handler):
+        from gevent import pywsgi, local
+        if not isinstance(threading.local(), local.local):
+            msg = "Bottle requires gevent.monkey.patch_all() (before import)"
+            raise RuntimeError(msg)
+        if self.quiet:
+            self.options['log'] = None
+
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+
+        self.options['keyfile'] = os.path.join(current_dir, 'certificates_/server.key')
+        self.options['certfile'] = os.path.join(current_dir, 'certificates_/server.crt')
+        
+        
+        address = (self.host, self.port)
+        server = pywsgi.WSGIServer(address, handler, **self.options)
+        if 'BOTTLE_CHILD' in os.environ:
+            import signal
+            signal.signal(signal.SIGINT, lambda s, f: server.stop())
+        server.serve_forever()
+
+debug(True)
+app().catchall = False
+run(port=8080, host="0.0.0.0", server=GeventSSLServer)

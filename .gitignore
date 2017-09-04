@@ -1,0 +1,10 @@
+*.pyc
+certificates*/*
+__pycache__/*
+pyGUI/*
+oldprefs/*
+*.pem
+*.stderr
+error_log
+*.dat
+*.txt
