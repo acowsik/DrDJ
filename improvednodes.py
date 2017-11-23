@@ -168,6 +168,17 @@ class Directory(object):
         mingood = nonEmptyFiles[-1].getProbability() / nonEmptyFiles[-1].filecount
         for i in nonEmptyFiles:
             print(i.path, i.getProbability() / i.filecount / mingood)
+            
+    def resetFileCounts(self):
+        """
+        Shitty hack for something that should be working
+        """
+        filecount = 0
+        for f in self.contents:
+            filecount += f.resetFileCounts()
+        
+        self.filecount = int(filecount)
+        return filecount
 
 
 class File(object):
@@ -223,3 +234,10 @@ class File(object):
 
     def exists(self):
         return os.path.exists(os.path.expanduser(self.path))
+    
+    def resetFileCounts(self):
+        return 1
+    
+if __name__ == '__main__':
+    a = pickle.load(open('./preferences.dat', 'rb'))
+    

@@ -10,6 +10,7 @@ import pickle
 from improvednodes import Directory, File
 from multiprocessing import Lock
 import hashlib
+from urllib.parse import quote, unquote
 
 
 monkey.patch_all()
@@ -31,15 +32,18 @@ PASSWORD_FILE = u"./passwords.dat"
 PREFERENCES_FILE = u"./preferences.dat"
 LOGIN_ROOT = os.path.join(WEBSITE_ROOT, u'login')
 PREFERENCES_LOCK = Lock()
+LOGIN_TIME = 100000.0
 
 
 
 try:
     musicFiles = pickle.load(open(PREFERENCES_FILE, 'rb'))
     newfiles = musicFiles.updateChanges()
-    print("%d new files added" % newfiles)
-    if newfiles > 0:
+    oldfilecount = musicFiles.filecount
+    if oldfilecount != musicFiles.resetFileCounts():
         pickle.dump(musicFiles, open(PREFERENCES_FILE, 'wb'))
+        print("%d new files added" % (musicFiles.filecount - oldfilecount))
+        
 except IOError:
     musicFiles = Directory(MUSIC_ROOT)
     pickle.dump(musicFiles, open(PREFERENCES_FILE, 'wb'))
@@ -54,7 +58,7 @@ except IOError:
 
 def loggedIn(r):
     return r.get_cookie('session_id', secret=SECRET_COOKIE_KEY) and session_id.get(r.get_cookie('session_id', secret=SECRET_COOKIE_KEY)) \
-     and session_id.get(r.get_cookie('session_id', secret=SECRET_COOKIE_KEY)) > time.time()
+     and session_id.get(r.get_cookie('session_id', secret=SECRET_COOKIE_KEY)) > time.time() - LOGIN_TIME
 
 
 @route('/<filename>')
@@ -104,12 +108,14 @@ def login():
 @post('/renewcookie')
 def renewCookie():
     if loggedIn(request):
-        session_id[request.get_cookie('session_id', secret=SECRET_COOKIE_KEY)] = time.time() + 1000.0
+        session_id[request.get_cookie('session_id', secret=SECRET_COOKIE_KEY)] = time.time()
         #print('renewed cookie')
 
 @route('/audio/<filename:path>')
 def serve_audio(filename):
     #print(filename)
+    filename = unquote(filename)
+    
     if not os.path.samefile(MUSIC_ROOT, os.path.commonprefix([MUSIC_ROOT, os.path.normpath(os.path.join(MUSIC_ROOT, filename))])):
         abort(401, "Sorry, access denied")
 
@@ -129,8 +135,12 @@ def getTitle(title):
         abort(401, "Sorry, access denied")
 
     with PREFERENCES_LOCK:
-        path = musicFiles.getRandomFile().path
-        pickle.dump(musicFiles, open(PREFERENCES_FILE, 'wb'))
+        random_file = musicFiles.getRandomFile()
+        path = random_file.path
+        random_file.updatePlayCount(1)
+        #print('updated play count, is now %d for %s' % (random_file.play_count, random_file.path))
+        with open(PREFERENCES_FILE, 'wb') as f:
+            pickle.dump(musicFiles, f)
     
     args=("ffprobe","-show_entries", "format=duration","-i",os.path.join(MUSIC_ROOT, path))
     #print(args.__repr__())
@@ -139,8 +149,9 @@ def getTitle(title):
     output = popen.stdout.read()
 
     path = os.path.relpath(path, MUSIC_ROOT)
+    
 
-    return {'song_url': '/audio/' + path, 'song_title': getTitle(os.path.join(MUSIC_ROOT, path)), 
+    return {'song_url': '/audio/' + quote(path), 'song_title': getTitle(os.path.join(MUSIC_ROOT, path)), 
             'duration': float(output.split(b'\n')[1].split(b'=')[1])}
 
 
@@ -152,16 +163,18 @@ def upvote():
 
         with PREFERENCES_LOCK:
             song = os.path.join(MUSIC_ROOT, os.path.relpath(song, "/audio"))
+            song = unquote(song)
             song = musicFiles.findFile(song)
 
             if song is None:
+                print('sorry')
                 return
 
             if vote == "upvote":
                 song.modifyProbability(song.like_increase)
             elif vote == "downvote":
                 song.modifyProbability(song.like_decrease)
-
+            print(song.path,'voted')
             pickle.dump(musicFiles, open(PREFERENCES_FILE, 'wb'))
 
 
