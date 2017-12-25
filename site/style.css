@@ -4,12 +4,24 @@ body{
 }
 
 audio.hidden{
-	visibility: hidden;
-	display: none;
+    visibility: hidden;
+    display: none;
+}
+
+svg.playpause{
+    position: absolute;
+    left: 35vw;
+    top: 51vh;
+}
+
+g.hidden{
+    visibility:hidden;
+    pointer-events: none;
 }
 
 .monospaced{
-	font-family: "Courier New", Courier, monospace;
+	font-family: monospace;
+    font-size: 3.2vw;
 	color: white;
 	
 	

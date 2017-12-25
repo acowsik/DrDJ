@@ -150,9 +150,12 @@ def getTitle(title):
 
     path = os.path.relpath(path, MUSIC_ROOT)
     
-
-    return {'song_url': '/audio/' + quote(path), 'song_title': getTitle(os.path.join(MUSIC_ROOT, path)), 
+    output = {'song_url': '/audio/' + quote(path), 'song_title': getTitle(os.path.join(MUSIC_ROOT, path)), 
             'duration': float(output.split(b'\n')[1].split(b'=')[1])}
+
+    print("Random title requested. Output:", output)
+
+    return output
 
 
 @post('/song/vote')
@@ -174,8 +177,9 @@ def upvote():
                 song.modifyProbability(song.like_increase)
             elif vote == "downvote":
                 song.modifyProbability(song.like_decrease)
-            print(song.path,'voted')
-            pickle.dump(musicFiles, open(PREFERENCES_FILE, 'wb'))
+            
+            with open(PREFERENCES_FILE, 'wb') as f:
+                pickle.dump(musicFiles, f)
 
 
 

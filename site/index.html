@@ -5,23 +5,33 @@
 <title>Music</title></head>
 
 <body bgcolor="black">
-	<!--<div class="monospaced">
-		<p style="font-size:300%" id="titlestring" >title alksdjf alskdf aslkdjf alksdjf alskdjfia sdifkek fie fie asdkf alsdkf asldkf alsdk fasdlkf asdlkf asdlfk asdlkf aslkdf alksdf alksdf alksdf oiasd foia sdiof aoiwe fsdafsoiawd f</p>
-		<p style="font-size:200%" id="timestring">time</p>
-	</div>>-->
-	
 
 	<audio id="music1" controls class="hidden">
-	  <source src="" type="audio/mpeg">
+		<source src="" type="audio/mpeg">
 	</audio>
 
 	<audio id="music2" controls class="hidden">
-	  <source src="" type="audio/mpeg">
+		<source src="" type="audio/mpeg">
 	</audio>
 	
-	<canvas id="myCanvas1" width="window.innerWidth" height="window.innerHeight"></canvas>
-	
+	<center class="monospaced">
+		<p id="Song_Title"></p>
+		<p id="Song_Time"></p>
+	</center>
+
 	<script src="/main.js" type="text/javascript"></script>
+
+	<svg viewBox="0 0 .15 .15" width="30vw" height="30vh" class="playpause">
+		<g id="PlayButton" onclick="switchPlay()" class="hidden">
+			<polygon points="0,0 0.15,0.075 0,0.15" fill="white"></polygon>
+		</g>
+		<g id="PauseButton" onclick="switchPlay()">
+			<polygon points="0,0 .06,0 .06,0.12 0,0.12" fill="white"></polygon>
+			<polygon points="0.09,0 0.15,0 0.15,0.12 0.09, 0.12" fill="white"></polygon>
+		</g>
+	</svg>
+	
+	
 
 </body>
 </html>
