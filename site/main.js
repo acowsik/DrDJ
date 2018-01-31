@@ -100,8 +100,13 @@ function draw(){
     var timestring = getTimeString(secondsElapsed) +" | " + getTimeString(secondsTotal);
     var titlestring = songBuffer.workingTitle;
 
-    document.getElementById("Song_Title").innerHTML = titlestring;
-    document.getElementById("Song_Time").innerHTML = timestring;
+    if(document.getElementById("Song_Title").innerHTML !== titlestring){
+        document.getElementById("Song_Title").innerHTML = titlestring;
+    }
+
+    if(document.getElementById("Song_Time").innerHTML !== timestring){
+        document.getElementById("Song_Time").innerHTML = timestring;
+    }
 
     try{
 

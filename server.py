@@ -78,6 +78,8 @@ def serveNormal(filename):
 
 @route('/login/<filename:path>')
 def serveLogin(filename):
+    if loggedIn(request):
+        redirect('/index.html', 307)
     if not os.path.samefile(LOGIN_ROOT, 
         os.path.commonprefix([LOGIN_ROOT, 
             os.path.normpath(os.path.join(LOGIN_ROOT, filename))])):
@@ -89,7 +91,10 @@ def serveLogin(filename):
 
 @route('/')
 def serveBase():
-    redirect('/login/index.html', 308)
+    if loggedIn(request):
+        redirect('/index.html', 307)
+    else:
+        redirect('/login/index.html', 307)
 
 @post('/login/login')
 def login():
@@ -113,17 +118,16 @@ def renewCookie():
 
 @route('/audio/<filename:path>')
 def serve_audio(filename):
-    #print(filename)
-    filename = unquote(filename)
-    
-    if not os.path.samefile(MUSIC_ROOT, os.path.commonprefix([MUSIC_ROOT, os.path.normpath(os.path.join(MUSIC_ROOT, filename))])):
-        abort(401, "Sorry, access denied")
-
-    if not os.path.exists(os.path.join(MUSIC_ROOT, filename)):
-        print(filename + "Does not exist")
-        exit(1)
-
     if loggedIn(request):
+        filename = unquote(filename)
+    
+        if not os.path.samefile(MUSIC_ROOT, os.path.commonprefix([MUSIC_ROOT, os.path.normpath(os.path.join(MUSIC_ROOT, filename))])):
+            abort(401, "Sorry, access denied")
+
+        if not os.path.exists(os.path.join(MUSIC_ROOT, filename)):
+            print(filename + "Does not exist")
+            exit(1)
+            
         return static_file(filename, root=MUSIC_ROOT)
     else:
         abort(401, "Sorry, access denied")
