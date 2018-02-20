@@ -150,31 +150,34 @@ var songBuffer = {
     songHistory: [],
 
     switchAudio: function(){
-        this.workingAudio.pause();
-        this.backgroundAudio.play();
+        songBuffer.workingAudio.pause();
+        songBuffer.backgroundAudio.play();
 
         //this.pushAudio();
 
-        tmp = this.workingAudio;
-        this.workingAudio = this.backgroundAudio;
-        this.backgroundAudio = tmp;
+        tmp = songBuffer.workingAudio;
+        songBuffer.workingAudio = songBuffer.backgroundAudio;
+        songBuffer.backgroundAudio = tmp;
 
-        tmp = this.workingTitle;
-        this.workingTitle = this.backgroundTitle;
-        this.backgroundTitle = tmp;
+        tmp = songBuffer.workingTitle;
+        songBuffer.workingTitle = songBuffer.backgroundTitle;
+        songBuffer.backgroundTitle = tmp;
 
-        tmp = this.workingDuration;
-        this.workingDuration = this.backgroundDuration;
-        this.backgroundDuration = tmp;
+        tmp = songBuffer.workingDuration;
+        songBuffer.workingDuration = songBuffer.backgroundDuration;
+        songBuffer.backgroundDuration = tmp;
 
-        tmp = this.workingSrc;
-        this.workingSrc = this.backgroundSrc;
-        this.backgroundSrc = tmp;
+        tmp = songBuffer.workingSrc;
+        songBuffer.workingSrc = songBuffer.backgroundSrc;
+        songBuffer.backgroundSrc = tmp;
 
-        document.title = this.workingTitle;
+        document.title = songBuffer.workingTitle;
 
 
-        this.getTitleAndURL();
+        songBuffer.getTitleAndURL();
+
+        songBuffer.workingAudio.onended = songBuffer.switchAudio;
+        renewCookie();
     },
 
     /*pushAudio: function(){
@@ -224,12 +227,15 @@ songBuffer.switchAudio();
 
 // this is a dumb hack but this js still runs without window focus
 // so the songs changes if you're not on the page
-var w = new Worker('worker.js');
+/*var w = new Worker('worker.js');
 w.onmessage = function(i){
     if(i.data === "songCheck"){
         cursong = songBuffer.workingAudio;
-        if(cursong.ended){
+        if(cursong.ended || (cursong.duration - cursong.currentTime) < 1.0){
+            console.log("Song Check arrived and song changed because of it");
             songBuffer.switchAudio();
+        }else{
+            console.log("Song check arrived and song didn't change because of it");
         }
         
 
@@ -253,7 +259,25 @@ w.onmessage = function(i){
         console.log(i.data);
     }
 
+}*/
+
+function renewCookie(){
+    xhr = new XMLHttpRequest();
+    xhr.open("POST", "/renewcookie", true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+
+    xhr.onload = function(e){
+        if(e.status == 401){
+            window.location.replace("/login/index.html");
+        }else{
+            //console.log("renewed cookie");
+        }
+    };
+
+    xhr.send(JSON.stringify({'cookie':'renew'}));
+    console.log("Cookie Renewed");
 }
+
 draw();
 
 /*function interpolateShapes(shape1, shape2, factor, clip = true){

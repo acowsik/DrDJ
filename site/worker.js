@@ -8,8 +8,8 @@ function nextSong(){
 	if(cursong.currentTime == cursong.duration){
 			window.songBuffer.switchAudio();
 	}*/
-	postMessage("songCheck");
-	setTimeout(nextSong, 100);
+	//postMessage("songCheck");
+	//setTimeout(nextSong, 1100);
 	
 }
 
@@ -18,5 +18,5 @@ function resetCookie(){
     setTimeout(resetCookie, 1000 * 30);
 }
 
-nextSong();
+//nextSong();
 resetCookie();
