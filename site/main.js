@@ -177,9 +177,16 @@ var songBuffer = {
         songBuffer.getTitleAndURL();
 
         songBuffer.workingAudio.onended = songBuffer.switchAudio;
-        songBuffer.workingAudio.onpaused = function(){if(songBuffer.workingAudio.duration - songBuffer.workingAudio.currentTime < 1){songBuffer.switchAudio();}};
-        songBuffer.workingAudio.onerror = function(){
+        songBuffer.workingAudio.onpaused = function(){
+            if(songBuffer.workingAudio.duration - songBuffer.workingAudio.currentTime < .5){
                 songBuffer.switchAudio();
+            }
+            };
+
+        songBuffer.workingAudio.onerror = function(){
+            console.log(songBuffer.workingAudio.error);
+            songBuffer.switchAudio();
+            
             };
         renewCookie();
     },
