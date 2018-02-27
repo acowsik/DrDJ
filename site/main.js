@@ -229,42 +229,6 @@ var songBuffer = {
 songBuffer.getTitleAndURL();
 songBuffer.switchAudio();
 
-// this is a dumb hack but this js still runs without window focus
-// so the songs changes if you're not on the page
-/*var w = new Worker('worker.js');
-w.onmessage = function(i){
-    if(i.data === "songCheck"){
-        cursong = songBuffer.workingAudio;
-        if(cursong.ended || (cursong.duration - cursong.currentTime) < 1.0){
-            console.log("Song Check arrived and song changed because of it");
-            songBuffer.switchAudio();
-        }else{
-            console.log("Song check arrived and song didn't change because of it");
-        }
-        
-
-    }else if(i.data === "cookie"){
-        xhr = new XMLHttpRequest();
-        xhr.open("POST", "/renewcookie", true);
-        xhr.setRequestHeader("Content-Type", "application/json");
-
-        xhr.onload = function(e){
-            if(e.status == 401){
-                window.location.replace("/login/index.html");
-            }else{
-                //console.log("renewed cookie");
-            }
-        };
-
-        xhr.send(JSON.stringify({'cookie':'renew'}));
-        //console.log("renewed cookie");
-    }else{
-        console.log(i);
-        console.log(i.data);
-    }
-
-}*/
-
 function renewCookie(){
     xhr = new XMLHttpRequest();
     xhr.open("POST", "/renewcookie", true);
