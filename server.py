@@ -134,7 +134,7 @@ def serve_audio(filename):
     
     
 @post('/title/<title>')
-def getTitle(title):
+def getTitleRequestProcess(title):
     if not loggedIn(request):
         abort(401, "Sorry, access denied")
 
