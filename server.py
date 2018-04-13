@@ -136,7 +136,8 @@ def serve_audio(filename):
 @post('/title/<title>')
 def getTitleRequestProcess(title):
     if not loggedIn(request):
-        abort(401, "Sorry, access denied")
+        #abort(401, "Sorry, access denied")
+        redirect('/login/index.html', 307)
 
     with PREFERENCES_LOCK:
         random_file = musicFiles.getRandomFile()
@@ -161,6 +162,20 @@ def getTitleRequestProcess(title):
 
     return output
 
+@post('/song/incrementlistencount')
+def updatelistencount():
+    if loggedIn(request):
+        song = request.json['song']
+        with PREFERENCES_LOCK:
+            song = os.path.join(MUSIC_ROOT, os.path.relpath(song, "/audio"))
+            song = unquote(song)
+            song = musicFiles.findFile(song)
+            if song is None:
+                print('cannot find song')
+            else:
+                song.updatePlayCount(1)
+    else:
+        abort(401, 'Sorry, access denied')
 
 @post('/song/vote')
 def upvote():
