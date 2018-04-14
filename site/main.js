@@ -153,6 +153,12 @@ var songBuffer = {
         songBuffer.workingAudio.pause();
         songBuffer.backgroundAudio.play();
 
+        xhr = new XMLHttpRequest();
+        xhr.open("POST", "/song/incrementlistencount");
+
+        //xhr.setRequestHeader("Content-Type", "application/json");   
+        xhr.send(songBuffer.backgroundAudio.src);
+
         //this.pushAudio();
 
         tmp = songBuffer.workingAudio;
@@ -205,6 +211,7 @@ var songBuffer = {
         xhr.send(null);
 
         //xhr.onload = function(e){
+            console.log(xhr.status);
             if(xhr.status == 401){
                 window.location.replace("/login/index.html");
             }
@@ -250,7 +257,7 @@ function renewCookie(){
     };
 
     xhr.send(JSON.stringify({'cookie':'renew'}));
-    console.log("Cookie Renewed");
+    //console.log("Cookie Renewed");
 }
 
 draw();

@@ -16,11 +16,9 @@ from urllib.parse import quote, unquote
 monkey.patch_all()
 
 import sys
-#sys.stderr = open('stderr','w')
 
 random_source = open(u'/dev/urandom', 'rb')
 
-#session_id = random_source.read(128)
 session_id = {}
 
 SECRET_COOKIE_KEY = "THISISDUMB"
@@ -136,19 +134,17 @@ def serve_audio(filename):
 @post('/title/<title>')
 def getTitleRequestProcess(title):
     if not loggedIn(request):
-        #abort(401, "Sorry, access denied")
-        redirect('/login/index.html', 307)
+        abort(401, "Sorry, access denied")
 
     with PREFERENCES_LOCK:
         random_file = musicFiles.getRandomFile()
         path = random_file.path
-        random_file.updatePlayCount(1)
-        #print('updated play count, is now %d for %s' % (random_file.play_count, random_file.path))
+
         with open(PREFERENCES_FILE, 'wb') as f:
             pickle.dump(musicFiles, f)
     
     args=("ffprobe","-show_entries", "format=duration","-i",os.path.join(MUSIC_ROOT, path))
-    #print(args.__repr__())
+    
     popen = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=open(os.devnull, 'w'))
     popen.wait()
     output = popen.stdout.read()
@@ -164,16 +160,28 @@ def getTitleRequestProcess(title):
 
 @post('/song/incrementlistencount')
 def updatelistencount():
-    if loggedIn(request):
-        song = request.json['song']
+    if loggedIn(request): 
         with PREFERENCES_LOCK:
-            song = os.path.join(MUSIC_ROOT, os.path.relpath(song, "/audio"))
-            song = unquote(song)
-            song = musicFiles.findFile(song)
-            if song is None:
-                print('cannot find song')
-            else:
-                song.updatePlayCount(1)
+            song = request.body.read().decode('utf-8')
+            
+            try:
+                song = os.path.join(MUSIC_ROOT, os.path.relpath(song[song.index('/audio'):], "/audio"))
+                song = unquote(song)
+                song = musicFiles.findFile(song)
+
+                if song is None:
+                    print('-' *80)
+                    print('cannot find song')
+                    print(song)
+                    print('-' *80)
+                else:
+                    song.updatePlayCount(1)
+            except ValueError:
+                pass
+                
+            
+            with open(PREFERENCES_FILE, 'wb') as f:
+                pickle.dump(musicFiles, f)
     else:
         abort(401, 'Sorry, access denied')
 
