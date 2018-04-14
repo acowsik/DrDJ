@@ -153,11 +153,7 @@ var songBuffer = {
         songBuffer.workingAudio.pause();
         songBuffer.backgroundAudio.play();
 
-        xhr = new XMLHttpRequest();
-        xhr.open("POST", "/song/incrementlistencount");
-
-        //xhr.setRequestHeader("Content-Type", "application/json");   
-        xhr.send(songBuffer.backgroundAudio.src);
+        
 
         //this.pushAudio();
 
@@ -181,6 +177,14 @@ var songBuffer = {
 
 
         songBuffer.getTitleAndURL();
+
+        // Only call this after getting the new title just to make sure
+        // that we have access to the page
+
+        xhr = new XMLHttpRequest();
+        xhr.open("POST", "/song/incrementlistencount");
+
+        xhr.send(songBuffer.backgroundAudio.src);
 
         songBuffer.workingAudio.onended = songBuffer.switchAudio;
         songBuffer.workingAudio.onpaused = function(){
@@ -214,6 +218,7 @@ var songBuffer = {
             console.log(xhr.status);
             if(xhr.status == 401){
                 window.location.replace("/login/index.html");
+                return;
             }
             try{
                 jresponse = JSON.parse(xhr.responseText);
