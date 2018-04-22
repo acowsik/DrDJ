@@ -53,6 +53,11 @@ except IOError:
     sys.stderr.write("Cannot find passwords\n")
     sys.stderr.flush()
     sys.exit(0xbadbeef)
+    
+unlistened_files = musicFiles.getAllFiles()
+unlistened_files = filter(lambda x: x.play_count == 0, unlistened_files)
+unlistened_files = list(unlistened_files)
+random.shuffle(unlistened_files)
 
 def loggedIn(r):
     return r.get_cookie('session_id', secret=SECRET_COOKIE_KEY) and session_id.get(r.get_cookie('session_id', secret=SECRET_COOKIE_KEY)) \
@@ -137,7 +142,11 @@ def getTitleRequestProcess(title):
         abort(401, "Sorry, access denied")
 
     with PREFERENCES_LOCK:
-        random_file = musicFiles.getRandomFile()
+        if len(unlistened_files) > 0:
+            random_file = unlistened_files.pop()
+        else:
+            random_file = musicFiles.getRandomFile()
+            
         path = random_file.path
 
         with open(PREFERENCES_FILE, 'wb') as f:
