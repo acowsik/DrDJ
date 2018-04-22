@@ -146,7 +146,7 @@ def getTitleRequestProcess(title):
             random_file = unlistened_files.pop()
         else:
             random_file = musicFiles.getRandomFile()
-            
+        
         path = random_file.path
 
         with open(PREFERENCES_FILE, 'wb') as f:

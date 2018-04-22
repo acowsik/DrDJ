@@ -5,6 +5,14 @@ from math import fsum
 from itertools import chain
 import random
 
+def safeDivide(a, b, c):
+    if c == 0:
+        return float('inf')
+    try:
+        return a / b
+    except ZeroDivisionError:
+        return float('inf')
+
 class Directory(object):
     acceptable = {u'mp3', u'm4a'}
 
@@ -66,12 +74,10 @@ class Directory(object):
 
     def getRandomFile(self, dither=True):
         if dither:
-            totalProbability = fsum(map(lambda x: x.filecount * x.pmodifier / (x.play_count + 0.1)**2, self.contents))
-            s = random.random() * totalProbability
-            for item in self.contents:
-                s -= item.pmodifier * item.filecount / (item.play_count + 0.1)**2
-                if s <= 0:
-                    return item.getRandomFile(dither=dither)
+            # instead of doing this kind of "falloff" dither we will just choose from the bottom 10 to always establish a floor
+            normalized_contents = self.contents[:]
+            normalized_contents.sort(key=lambda x: safeDivide(x.play_count, x.getProbability(), x.filecount))
+            return random.choice(normalized_contents[:10]).getRandomFile(dither=dither)
         else:
             totalProbability = fsum(map(lambda x: x.filecount * x.pmodifier, self.contents))
             s = random.random() * totalProbability
