@@ -1,6 +1,9 @@
+from gevent import monkey
+
+monkey.patch_all()
+
 from bottle import route, run, debug, request, static_file, post, response, app, ServerAdapter, redirect, abort
 import threading
-from gevent import monkey
 import os
 import random
 import time
@@ -12,8 +15,6 @@ from multiprocessing import Lock
 import hashlib
 from urllib.parse import quote, unquote
 
-
-monkey.patch_all()
 
 import sys
 
@@ -35,16 +36,16 @@ LOGIN_TIME = 100000.0
 
 
 try:
-    musicFiles = pickle.load(open(PREFERENCES_FILE, 'rb'))
+    musicFiles = pickle.load(open(PREFERENCES_FILE, 'rb'), encoding='latin1')
     newfiles = musicFiles.updateChanges()
     oldfilecount = musicFiles.filecount
     if oldfilecount != musicFiles.resetFileCounts():
-        pickle.dump(musicFiles, open(PREFERENCES_FILE, 'wb'))
+        pickle.dump(musicFiles, open(PREFERENCES_FILE, 'wb'),pickle.HIGHEST_PROTOCOL)
         print("%d new files added" % (musicFiles.filecount - oldfilecount))
         
 except IOError:
     musicFiles = Directory(MUSIC_ROOT)
-    pickle.dump(musicFiles, open(PREFERENCES_FILE, 'wb'))
+    pickle.dump(musicFiles, open(PREFERENCES_FILE, 'wb'), pickle.HIGHEST_PROTOCOL)
 
 try:
     userpass = pickle.load(open(PASSWORD_FILE, 'rb'))
@@ -58,6 +59,7 @@ unlistened_files = musicFiles.getAllFiles()
 unlistened_files = filter(lambda x: x.play_count == 0, unlistened_files)
 unlistened_files = list(unlistened_files)
 random.shuffle(unlistened_files)
+#unlistened_files += [musicFiles.findFile(os.path.join(MUSIC_ROOT, "M/NICE GUYS.mp3"))]
 
 def loggedIn(r):
     return r.get_cookie('session_id', secret=SECRET_COOKIE_KEY) and session_id.get(r.get_cookie('session_id', secret=SECRET_COOKIE_KEY)) \
@@ -121,6 +123,9 @@ def renewCookie():
 
 @route('/audio/<filename:path>')
 def serve_audio(filename):
+    print('-'*80)
+    print("Serving:", filename)
+    print('-' *80)
     if loggedIn(request):
         filename = unquote(filename)
     
@@ -129,7 +134,7 @@ def serve_audio(filename):
 
         if not os.path.exists(os.path.join(MUSIC_ROOT, filename)):
             print(filename + "Does not exist")
-            exit(1)
+            abort(404, "File does not exist")
             
         return static_file(filename, root=MUSIC_ROOT)
     else:
@@ -150,7 +155,7 @@ def getTitleRequestProcess(title):
         path = random_file.path
 
         with open(PREFERENCES_FILE, 'wb') as f:
-            pickle.dump(musicFiles, f)
+            pickle.dump(musicFiles, f, pickle.HIGHEST_PROTOCOL)
     
     args=("ffprobe","-show_entries", "format=duration","-i",os.path.join(MUSIC_ROOT, path))
     
@@ -185,12 +190,15 @@ def updatelistencount():
                     print('-' *80)
                 else:
                     song.updatePlayCount(1)
+                    print('-' * 80)
+                    print("Updating play count:", song.path)
+                    print('-' * 80)
             except ValueError:
                 pass
                 
             
             with open(PREFERENCES_FILE, 'wb') as f:
-                pickle.dump(musicFiles, f)
+                pickle.dump(musicFiles, f, pickle.HIGHEST_PROTOCOL)
     else:
         abort(401, 'Sorry, access denied')
 
@@ -215,7 +223,7 @@ def upvote():
                 song.modifyProbability(song.like_decrease)
             
             with open(PREFERENCES_FILE, 'wb') as f:
-                pickle.dump(musicFiles, f)
+                pickle.dump(musicFiles, f, pickle.HIGHEST_PROTOCOL)
 
 
 

@@ -8,3 +8,5 @@ oldprefs/*
 error_log
 *.dat
 *.txt
+*~*
+analyzer/*

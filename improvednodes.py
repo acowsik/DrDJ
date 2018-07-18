@@ -246,4 +246,6 @@ class File(object):
     
 if __name__ == '__main__':
     a = pickle.load(open('./preferences.dat', 'rb'))
-    
+    files = a.getAllFiles()
+    files = list(filter(lambda x: x.play_count == 0, files))
+    print(len(files))
