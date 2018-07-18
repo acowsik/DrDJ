@@ -36,7 +36,7 @@ LOGIN_TIME = 100000.0
 
 
 try:
-    musicFiles = pickle.load(open(PREFERENCES_FILE, 'rb'), encoding='latin1')
+    musicFiles = pickle.load(open(PREFERENCES_FILE, 'rb'))
     newfiles = musicFiles.updateChanges()
     oldfilecount = musicFiles.filecount
     if oldfilecount != musicFiles.resetFileCounts():
