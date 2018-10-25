@@ -4,6 +4,7 @@ import pdb
 from math import fsum
 from itertools import chain
 import random
+import sys
 
 def safeDivide(a, b, c):
     if c == 0:
@@ -74,10 +75,11 @@ class Directory(object):
 
     def getRandomFile(self, dither=True):
         if dither:
-            # instead of doing this kind of "falloff" dither we will just choose from the bottom 10 to always establish a floor
+            # instead of doing this kind of "falloff" dither we will just choose from the bottom 10% to always establish a floor
             normalized_contents = self.contents[:]
             normalized_contents.sort(key=lambda x: safeDivide(x.play_count, x.getProbability(), x.filecount))
-            return random.choice(normalized_contents[:10]).getRandomFile(dither=dither)
+            bottom_10 = len(normalized_contents)//10 + 1
+            return random.choice(normalized_contents[:bottom_10]).getRandomFile(dither=dither)
         else:
             totalProbability = fsum(map(lambda x: x.filecount * x.pmodifier, self.contents))
             s = random.random() * totalProbability
@@ -105,6 +107,9 @@ class Directory(object):
 
     def findFile(self, path):
         path = os.path.normpath(path)
+        sameitems = [] #this is because the paths may be the same for some files but they
+                       #they only have a partial match in some directories
+                       #so you want to find the longest path
         for item in self.contents:
             try:
                 cprefix = os.path.commonprefix([os.path.normpath(item.path), path])
@@ -112,7 +117,11 @@ class Directory(object):
                 print([os.path.normpath(item.path), path])
                 raise
             if os.path.exists(cprefix) and os.path.samefile(cprefix, item.path):
-                return item.findFile(path)
+                sameitems.append(item)
+
+        #return the one that has the longest match
+        if len(sameitems) > 0:
+            return max(sameitems, key=lambda x: len(os.path.commonprefix([os.path.normpath(x.path), path]))).findFile(path)
 
         return None
         
@@ -249,3 +258,26 @@ if __name__ == '__main__':
     files = a.getAllFiles()
     files = list(filter(lambda x: x.play_count == 0, files))
     print(len(files))
+
+    def findstart(strings):
+        s = strings[0]
+        imax = len(s)
+        for string in strings:
+            while imax > 0 and (not string.startswith(s[:imax])):
+                imax -= 1
+            if imax == 0:
+                return ''
+            s = s[:imax]
+
+        return s
+    
+    
+    try:
+        if sys.argv[-1] == 'print':
+            l = len(findstart(list(map(lambda x: x.path, files))))
+            for i in files:
+                print(i.path[l:])
+    except IndexError:
+        pass
+    except:
+        raise

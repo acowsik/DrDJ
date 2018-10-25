@@ -184,7 +184,7 @@ var songBuffer = {
         xhr = new XMLHttpRequest();
         xhr.open("POST", "/song/incrementlistencount");
 
-        xhr.send(songBuffer.backgroundAudio.src);
+        xhr.send(songBuffer.workingAudio.src);
 
         songBuffer.workingAudio.onended = songBuffer.switchAudio;
         songBuffer.workingAudio.onpaused = function(){

@@ -59,6 +59,15 @@ unlistened_files = musicFiles.getAllFiles()
 unlistened_files = filter(lambda x: x.play_count == 0, unlistened_files)
 unlistened_files = list(unlistened_files)
 random.shuffle(unlistened_files)
+
+if len(unlistened_files) > 0:
+    for i in unlistened_files:
+        print(i.path)
+else:
+    print("No more unlistened files")
+
+
+random.shuffle(unlistened_files)
 #unlistened_files += [musicFiles.findFile(os.path.join(MUSIC_ROOT, "M/NICE GUYS.mp3"))]
 
 def loggedIn(r):
@@ -149,8 +158,10 @@ def getTitleRequestProcess(title):
     with PREFERENCES_LOCK:
         if len(unlistened_files) > 0:
             random_file = unlistened_files.pop()
+            #print("*****We have unlistened files*****")
         else:
             random_file = musicFiles.getRandomFile()
+            #print("*****We do not have unlistened files*****")
         
         path = random_file.path
 
@@ -177,12 +188,10 @@ def updatelistencount():
     if loggedIn(request): 
         with PREFERENCES_LOCK:
             song = request.body.read().decode('utf-8')
-            
             try:
                 song = os.path.join(MUSIC_ROOT, os.path.relpath(song[song.index('/audio'):], "/audio"))
                 song = unquote(song)
                 song = musicFiles.findFile(song)
-
                 if song is None:
                     print('-' *80)
                     print('cannot find song')
