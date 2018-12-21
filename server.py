@@ -156,7 +156,7 @@ def getTitleRequestProcess(title):
         abort(401, "Sorry, access denied")
 
     with PREFERENCES_LOCK:
-        if len(unlistened_files) > 0:
+        if False and len(unlistened_files) > 0:
             random_file = unlistened_files.pop()
             #print("*****We have unlistened files*****")
         else:

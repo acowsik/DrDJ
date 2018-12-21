@@ -91,6 +91,13 @@ class Directory(object):
         # failsafe
         return self.contents[-1]
 
+    def getUnderplayedSongs(self):
+        normalized_contents = self.contents[:]
+        normalized_contents.sort(key=lambda x: safeDivide(x.play_count, x.getProbability(), x.filecount))
+        bottom_10 = len(normalized_contents)//10 + 1
+        for i in normalized_contents[:bottom_10]:
+            yield (i.path, safeDivide(i.play_count, i.getProbability(), i.filecount))
+
     def getProbability(self):
         if self.parent is None:
             return 1.0
@@ -197,8 +204,8 @@ class Directory(object):
 
 
 class File(object):
-    like_increase = 1.1
-    like_decrease = 1 / 1.1
+    like_increase = 1.03
+    like_decrease = 1 / 1.03
 
     def __init__(self, path, parent):
         self.path = path
@@ -277,6 +284,9 @@ if __name__ == '__main__':
             l = len(findstart(list(map(lambda x: x.path, files))))
             for i in files:
                 print(i.path[l:])
+        if sys.argv[-1] == 'order':
+            for i in a.getUnderplayedSongs():
+                print(i)
     except IndexError:
         pass
     except:
