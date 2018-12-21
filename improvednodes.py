@@ -78,8 +78,8 @@ class Directory(object):
             # instead of doing this kind of "falloff" dither we will just choose from the bottom 10% to always establish a floor
             normalized_contents = self.contents[:]
             normalized_contents.sort(key=lambda x: safeDivide(x.play_count, x.getProbability(), x.filecount))
-            files_to_choose_from = len(normalized_contents)//10 + 1
-            #return random.choice(normalized_contents[:bottom_10]).getRandomFile(dither=dither)
+            bottom_10 = len(normalized_contents)//10 + 1
+            files_to_choose_from = normalized_contents[:bottom_10]
         else:
             files_to_choose_from = self.contents
 
